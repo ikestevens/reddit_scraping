@@ -46,10 +46,10 @@ def get_questions_answers(link):
 
 def get_comments_answers(reddit, search_words, items_limit=5000):
 
-    # Collect reddit posts
+    # Collect reddit question and answers
     subreddit = reddit.subreddit(search_words)
     new_subreddit = subreddit.new(limit=items_limit)
-    topics_dict = { "title":[],
+    QA_dict = { "title":[],
                 "score":[],
                 "id":[],
                 "url":[],
@@ -57,33 +57,42 @@ def get_comments_answers(reddit, search_words, items_limit=5000):
                 "created": [],
                 "body":[],
                 "question count": [],
-                "Q/A's":[]}
+                "question":[],
+                "answer":[],
+                "QA_ID":[],
+                "subreddit":[]}
 
     print(f"retreive new reddit posts ...")
     for submission in tqdm(new_subreddit):
         try:
             QA_list = get_questions_answers(submission.url)
-            if len(QA_list) == 0 or QA_list == None or submission.title == 'Comment':
-                continue
-            else:
-                topics_dict["Q/A's"].append(get_questions_answers(submission.url))
-                topics_dict["question count"].append(len(QA_list))
-                topics_dict["title"].append(submission.title)
-                topics_dict["score"].append(submission.score)
-                topics_dict["id"].append(submission.id)
-                topics_dict["url"].append(submission.url)
-                topics_dict["comms_num"].append(submission.num_comments)
-                topics_dict["created"].append(submission.created)
-                topics_dict["body"].append(submission.selftext)
         except:
-            print("Failed to do this one" + submission.url)
+            print("Failed to do this one " + submission.url)
             continue
+        if len(QA_list) == 0 or QA_list == None or submission.title == 'Comment':
+            continue
+        else:
+            i = 1 #for question/answer ID
+            for QA_tuple in QA_list:
+                QA_dict["question"].append(QA_tuple[0])
+                QA_dict['answer'].append(QA_tuple[1])
+                QA_dict['QA_ID'].append(i)
+                QA_dict["subreddit"].append(search_words)
+                QA_dict["question count"].append(len(QA_list))
+                QA_dict["title"].append(submission.title)
+                QA_dict["score"].append(submission.score)
+                QA_dict["id"].append(submission.id)
+                QA_dict["url"].append(submission.url)
+                QA_dict["comms_num"].append(submission.num_comments)
+                QA_dict["created"].append(submission.created)
+                QA_dict["body"].append(submission.selftext)
+                i+=1
 
-    topics_df = pd.DataFrame(topics_dict)
-    print(f"new reddit posts retrieved: {len(topics_df)}")
-    topics_df['timestamp'] = topics_df['created'].apply(lambda x: get_date(x))
+    QA_df = pd.DataFrame(QA_dict)
+    print(f"new reddit posts retrieved: {len(QA_df)}")
+    QA_df['timestamp'] = QA_df['created'].apply(lambda x: get_date(x))
 
-    return topics_df
+    return QA_df
 
 
 def update_and_save_dataset(topics_df):
